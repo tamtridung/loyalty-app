@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ShopStatus {
+  active
+  inactive
+}
+
+enum StaffRole {
+  owner
+  manager
+  staff
+}
+
+enum StaffStatus {
+  active
+  disabled
+}
+
+enum CustomerLoginType {
+  phone
+  email
+}
+
+enum PointTransactionStatus {
+  success
+  failed
+}
+
+model Shop {
+  id                      String   @id @default(uuid())
+  name                    String
+  timezone                String   @default("UTC")
+  status                  ShopStatus @default(active)
+  createdAt               DateTime @default(now())
+
+  defaultAwardPoints       Int      @default(1)
+  awardPresets             Int[]    @default([])
+  dailyAwardLimitPerCustomer Int    @default(3)
+
+  staffUsers              StaffUser[]
+  memberships             Membership[]
+  pointTransactions       PointTransaction[]
+}
+
+model StaffUser {
+  id             String      @id @default(uuid())
+  shopId         String
+  usernameOrEmail String
+  passwordHash   String
+  displayName    String?
+  role           StaffRole   @default(staff)
+  status         StaffStatus @default(active)
+  createdAt      DateTime    @default(now())
+  lastLoginAt    DateTime?
+
+  shop           Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  pointTransactions PointTransaction[]
+
+  @@unique([shopId, usernameOrEmail])
+  @@index([shopId])
+}
+
+model Customer {
+  id        String            @id @default(uuid())
+  loginId   String            @unique
+  loginType CustomerLoginType
+  createdAt DateTime          @default(now())
+
+  memberships       Membership[]
+  pointTransactions PointTransaction[]
+}
+
+model Membership {
+  id           String   @id @default(uuid())
+  shopId       String
+  customerId   String
+  displayName  String?
+  pointsBalance Int     @default(0)
+  updatedAt    DateTime @updatedAt
+
+  shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, customerId])
+  @@index([shopId])
+  @@index([customerId])
+}
+
+model PointTransaction {
+  id            String                 @id @default(uuid())
+  shopId        String
+  staffUserId   String
+  customerId    String
+  pointsAwarded Int
+  status        PointTransactionStatus @default(success)
+  failureReason String?
+  createdAt     DateTime               @default(now())
+  shopLocalDate String
+
+  shop          Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  staffUser     StaffUser  @relation(fields: [staffUserId], references: [id], onDelete: Restrict)
+  customer      Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([shopId, customerId, createdAt])
+  @@index([shopId, customerId, shopLocalDate])
+  @@index([shopId, createdAt])
+}
