@@ -22,7 +22,7 @@ Thumbs.db
 *.tmp
 
 # editors
-.vscode/
+# .vscode/
 .idea/
 
 # coverage
