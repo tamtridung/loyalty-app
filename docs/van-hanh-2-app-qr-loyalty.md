@@ -95,6 +95,8 @@ Mặc định các cổng:
 - API: `http://localhost:3001`
 - Merchant app: `http://localhost:3002`
 
+> Ghi chú: API nằm dưới các đường dẫn `http://localhost:3001/api/...`. Trang `http://localhost:3001/` chỉ là trang thông báo API đang chạy.
+
 ---
 
 ## 4) Vận hành luồng demo chuẩn (đúng theo nghiệp vụ)

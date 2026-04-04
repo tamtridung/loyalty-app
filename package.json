@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "concurrently -n customer,api,merchant -c auto \"npm -w apps/customer run dev\" \"npm -w apps/api run dev\" \"npm -w apps/merchant run dev\"",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
@@ -17,6 +17,7 @@
     "db:seed": "npm --workspace apps/api run db:seed"
   },
   "devDependencies": {
-    "@playwright/test": "^1.53.0"
+    "@playwright/test": "^1.53.0",
+    "concurrently": "^9.2.1"
   }
 }
