@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { customerLogin } from '@/lib/api';
 import { setCustomerLoginId, setCustomerToken } from '@/lib/session';
 
@@ -12,7 +12,8 @@ function getErrorMessage(error: unknown): string {
   return maybe?.error?.message ?? 'Login failed';
 }
 
-export default function CustomerLoginPage({ params }: { params: { shopId: string } }) {
+export default function CustomerLoginPage({ params }: { params: Promise<{ shopId: string }> }) {
+  const { shopId } = use(params);
   const router = useRouter();
   const [loginId, setLoginId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,10 +24,14 @@ export default function CustomerLoginPage({ params }: { params: { shopId: string
     setError(null);
     setIsSubmitting(true);
     try {
-      const result = await customerLogin(loginId);
+      const result = await customerLogin(loginId, shopId);
       setCustomerToken(result.session.token);
       setCustomerLoginId(result.customer.loginId);
-      router.push(`/shops/${encodeURIComponent(params.shopId)}/membership`);
+      if (result.membershipExists) {
+        router.push(`/shops/${encodeURIComponent(shopId)}/membership`);
+      } else {
+        router.push(`/shops/${encodeURIComponent(shopId)}/register`);
+      }
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
