@@ -82,6 +82,8 @@ model Membership {
   shopId       String
   customerId   String
   displayName  String?
+  age          Int?
+  address      String?
   pointsBalance Int     @default(0)
   updatedAt    DateTime @updatedAt
 

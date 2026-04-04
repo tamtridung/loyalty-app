@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { getMembership } from '@/lib/api';
 import { clearCustomerToken, getCustomerLoginId, getCustomerToken } from '@/lib/session';
@@ -15,7 +16,9 @@ function getErrorMessage(error: unknown): { code?: string; message: string } {
   };
 }
 
-export default function MembershipPage({ params }: { params: { shopId: string } }) {
+export default function MembershipPage({ params }: { params: Promise<{ shopId: string }> }) {
+  const { shopId } = use(params);
+  const router = useRouter();
   const token = useMemo(() => getCustomerToken(), []);
   const [state, setState] = useState<
     | { status: 'loading' }
@@ -35,7 +38,7 @@ export default function MembershipPage({ params }: { params: { shopId: string } 
     if (!token) return;
     setState({ status: 'loading' });
     try {
-      const data = await getMembership(params.shopId, token);
+      const data = await getMembership(shopId, token);
       setState({
         status: 'ready',
         shopName: data.shop.name,
@@ -47,15 +50,21 @@ export default function MembershipPage({ params }: { params: { shopId: string } 
       const parsed = getErrorMessage(err);
       if (parsed.code === 'UNAUTHORIZED') {
         clearCustomerToken();
+        router.replace(`/shops/${encodeURIComponent(shopId)}/login`);
+        return;
+      }
+      if (parsed.code === 'REGISTRATION_REQUIRED') {
+        router.replace(`/shops/${encodeURIComponent(shopId)}/register`);
+        return;
       }
       setState({ status: 'error', message: parsed.message });
     }
-  }, [loginId, params.shopId, token]);
+  }, [loginId, router, shopId, token]);
 
   useEffect(() => {
     if (!token) return;
 
-    getMembership(params.shopId, token)
+    getMembership(shopId, token)
       .then((data) => {
         setState({
           status: 'ready',
@@ -69,10 +78,16 @@ export default function MembershipPage({ params }: { params: { shopId: string } 
         const parsed = getErrorMessage(err);
         if (parsed.code === 'UNAUTHORIZED') {
           clearCustomerToken();
+          router.replace(`/shops/${encodeURIComponent(shopId)}/login`);
+          return;
+        }
+        if (parsed.code === 'REGISTRATION_REQUIRED') {
+          router.replace(`/shops/${encodeURIComponent(shopId)}/register`);
+          return;
         }
         setState({ status: 'error', message: parsed.message });
       });
-  }, [loginId, params.shopId, token]);
+  }, [loginId, router, shopId, token]);
 
   return (
     <main className="min-h-dvh p-4">
@@ -94,7 +109,7 @@ export default function MembershipPage({ params }: { params: { shopId: string } 
               </div>
               <div className="shrink-0 space-x-2">
                 <a
-                  href={`/shops/${encodeURIComponent(params.shopId)}/membership/edit-name`}
+                  href={`/shops/${encodeURIComponent(shopId)}/membership/edit-name`}
                   className="inline-block rounded-xl border border-gray-200 px-3 py-2 text-sm"
                 >
                   Edit

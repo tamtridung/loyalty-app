@@ -23,10 +23,8 @@ export async function GET(request: Request, context: { params: Promise<{ shopId:
       throw new ApiError(404, 'NOT_FOUND', 'Shop not found');
     }
 
-    const membership = await prisma.membership.upsert({
+    const membership = await prisma.membership.findUnique({
       where: { shopId_customerId: { shopId, customerId } },
-      update: {},
-      create: { shopId, customerId, pointsBalance: 0 },
       select: {
         customerId: true,
         displayName: true,
@@ -34,6 +32,9 @@ export async function GET(request: Request, context: { params: Promise<{ shopId:
         updatedAt: true,
       },
     });
+    if (!membership) {
+      throw new ApiError(404, 'REGISTRATION_REQUIRED', 'Please complete registration first');
+    }
 
     const customerQrValue = encodeCustomerQrValue(shopId, customerId);
 

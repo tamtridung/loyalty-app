@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import { getMembership, updateDisplayName } from '@/lib/api';
 import { clearCustomerToken, getCustomerLoginId, getCustomerToken } from '@/lib/session';
 
@@ -16,7 +16,8 @@ function getErrorMessage(error: unknown, fallback: string): { code?: string; mes
   };
 }
 
-export default function EditNamePage({ params }: { params: { shopId: string } }) {
+export default function EditNamePage({ params }: { params: Promise<{ shopId: string }> }) {
+  const { shopId } = use(params);
   const router = useRouter();
   const token = useMemo(() => getCustomerToken(), []);
   const loginId = useMemo(() => getCustomerLoginId(), []);
@@ -27,11 +28,11 @@ export default function EditNamePage({ params }: { params: { shopId: string } })
 
   useEffect(() => {
     if (!token) {
-      router.replace(`/shops/${encodeURIComponent(params.shopId)}/login`);
+      router.replace(`/shops/${encodeURIComponent(shopId)}/login`);
       return;
     }
 
-    getMembership(params.shopId, token)
+    getMembership(shopId, token)
       .then((data) => {
         setValue(data.membership.displayName || loginId || '');
       })
@@ -39,12 +40,16 @@ export default function EditNamePage({ params }: { params: { shopId: string } })
         const parsed = getErrorMessage(err, 'Failed to load profile');
         if (parsed.code === 'UNAUTHORIZED') {
           clearCustomerToken();
-          router.replace(`/shops/${encodeURIComponent(params.shopId)}/login`);
+          router.replace(`/shops/${encodeURIComponent(shopId)}/login`);
+          return;
+        }
+        if (parsed.code === 'REGISTRATION_REQUIRED') {
+          router.replace(`/shops/${encodeURIComponent(shopId)}/register`);
           return;
         }
         setError(parsed.message);
       });
-  }, [loginId, params.shopId, router, token]);
+  }, [loginId, router, shopId, token]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,13 +57,13 @@ export default function EditNamePage({ params }: { params: { shopId: string } })
     setError(null);
     setIsSubmitting(true);
     try {
-      await updateDisplayName(params.shopId, token, value);
-      router.push(`/shops/${encodeURIComponent(params.shopId)}/membership`);
+      await updateDisplayName(shopId, token, value);
+      router.push(`/shops/${encodeURIComponent(shopId)}/membership`);
     } catch (err: unknown) {
       const parsed = getErrorMessage(err, 'Update failed');
       if (parsed.code === 'UNAUTHORIZED') {
         clearCustomerToken();
-        router.replace(`/shops/${encodeURIComponent(params.shopId)}/login`);
+        router.replace(`/shops/${encodeURIComponent(shopId)}/login`);
         return;
       }
       setError(parsed.message);
@@ -73,7 +78,7 @@ export default function EditNamePage({ params }: { params: { shopId: string } })
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Display name</h1>
           <Link
-            href={`/shops/${encodeURIComponent(params.shopId)}/membership`}
+            href={`/shops/${encodeURIComponent(shopId)}/membership`}
             className="rounded-xl border border-gray-200 px-3 py-2 text-sm"
           >
             Back

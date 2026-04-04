@@ -3,19 +3,44 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3
 export type CustomerLoginResponse = {
   customer: { id: string; loginId: string };
   session: { token: string };
+  membershipExists: boolean;
 };
 
-export async function customerLogin(loginId: string): Promise<CustomerLoginResponse> {
+export async function customerLogin(loginId: string, shopId: string): Promise<CustomerLoginResponse> {
   const res = await fetch(`${API_BASE_URL}/api/customer/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ loginId }),
+    body: JSON.stringify({ loginId, shopId }),
   });
 
   if (!res.ok) {
     throw await res.json();
   }
   return (await res.json()) as CustomerLoginResponse;
+}
+
+export async function registerMembership(
+  shopId: string,
+  token: string,
+  payload: { displayName?: string; age?: number | null; address?: string },
+): Promise<{ membership: { displayName: string; age: number | null; address: string } }> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/customer/shops/${encodeURIComponent(shopId)}/membership/register`,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!res.ok) {
+    throw await res.json();
+  }
+
+  return (await res.json()) as { membership: { displayName: string; age: number | null; address: string } };
 }
 
 export type CustomerMembershipResponse = {
