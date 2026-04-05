@@ -10,7 +10,9 @@
     "test": "vitest run",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed"
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "shop:provision": "tsx src/scripts/provisionShop.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.6.0",
